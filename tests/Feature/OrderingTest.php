@@ -49,4 +49,26 @@ class OrderingTest extends TestCase
 
         $this->assertTrue(Dish::find($dish->id)->available == 3);
     }
+
+    /** @test */
+    public function order_reflects_quantity_unit_price_and_total_amount()
+    {
+        $dish = Dish::factory()->create();
+        $quantity = 2;
+
+        $response = $this->postJson('/api/order', [
+            'dish_id' => $dish->id,
+            'quantity' => $quantity,
+        ]);
+
+        $response
+            ->assertStatus(201)
+            ->assertJson([
+                'message' => 'Order placed successfully',
+            ]);
+
+        $this->assertTrue(Order::whereDishId($dish->id)->first()->quantity == $quantity);
+        $this->assertTrue(Order::whereDishId($dish->id)->first()->unit_price == $dish->price);
+        $this->assertTrue(Order::whereDishId($dish->id)->first()->amount == $dish->price * $quantity);
+    }
 }
