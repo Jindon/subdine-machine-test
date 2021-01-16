@@ -14,20 +14,7 @@ class ReportController extends Controller
     {
         $date = Carbon::today()->subDays(2);
 
-        $dishes =  Dish::addSelect([
-                    'quantity' => Order::selectRaw('sum(quantity) as total')
-                                    ->whereColumn('dish_id', 'dishes.id')
-                                    ->where('created_at', '>=', $date)
-                                    ->groupBy('dish_id'),
-                    'sale_amount' => Order::selectRaw('sum(amount) as total')
-                                        ->whereColumn('dish_id', 'dishes.id')
-                                        ->where('created_at', '>=', $date)
-                                        ->groupBy('dish_id'),
-                    ])
-                    ->withCount(['orders' => function($query) use($date) {
-                        $query->where('created_at', '>=', $date);
-                    }])
-                    ->get();
+        $dishes = $this->salesQuery($date);
 
         return DishSalesResource::collection($dishes);
     }
@@ -36,21 +23,21 @@ class ReportController extends Controller
     {
         $date = Carbon::today()->subDays(10);
 
-        $mostSold = $this->mostLeastSaleQuery($date, 'desc', 5);
+        $mostSold = $this->salesQuery($date, 'desc', 5);
 
-        $leastSold = $this->mostLeastSaleQuery($date, 'asc', 5);
+        $leastSold = $this->salesQuery($date, 'asc', 5);
 
 
         return response()->json([
             'data' => [
-                'most_sold' => $mostSold,
-                'least_sold' => $leastSold,
+                'most_sold' => $mostSold->map(function($element) {return collect($element)->except(['created_at', 'updated_at']);}),
+                'least_sold' => $leastSold->map(function($element) {return collect($element)->except(['created_at', 'updated_at']);}),
             ]
         ]);
 
     }
 
-    protected function mostLeastSaleQuery($date, $order, $take)
+    protected function salesQuery($date, $order = null, $take = null)
     {
         return Dish::addSelect([
             'quantity' => Order::selectRaw('sum(quantity) as total')
@@ -62,6 +49,13 @@ class ReportController extends Controller
                 ->whereColumn('dish_id', 'dishes.id')
                 ->where('created_at', '>=', $date)
                 ->groupBy('dish_id'),
-            ])->orderBy('quantity', $order)->take($take)->get();
+            ])->when($order, function($query, $order) {
+                $query->orderBy('quantity', $order);
+            })->when($take, function($query, $take) {
+                $query->take($take);
+            })
+            // ->orderBy('quantity', $order)
+            // ->take($take)
+            ->get();
     }
 }
