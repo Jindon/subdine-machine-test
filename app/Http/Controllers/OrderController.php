@@ -48,7 +48,7 @@ class OrderController extends Controller
 
             return response()->json([
                 'message' => 'Order placed successfully',
-                'order' => $order,
+                'order' => $order->load('dish'),
             ], 201);
 
         } catch(ModelNotFoundException $exception) {
