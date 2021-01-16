@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DishController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ReportController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -22,4 +23,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 
 Route::get('/items', [DishController::class, 'index'])->name('items');
 Route::post('/order', OrderController::class)->name('order');
+
+Route::get('/sales/dishes', [ReportController::class, 'dishSales'])->name('dishSales');
+Route::get('/sales/overview', [ReportController::class, 'saleOverview'])->name('saleOverview');
 
